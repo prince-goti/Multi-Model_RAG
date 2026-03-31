@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRAG Research Interface</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f5;
+            --sidebar-bg: #ffffff;
+            --text-primary: #18181b;
+            --text-secondary: #71717a;
+            --accent: #2563eb;
+            --border: #e4e4e7;
+            --success: #10b981;
+            --error: #ef4444;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            font-size: 14px;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 24px;
+        }
+
+        .brand {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        .badge {
+            background: #eff6ff;
+            color: var(--accent);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .upload-grid { display: flex; flex-direction: column; gap: 12px; }
+        .upload-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafafa;
+        }
+        .upload-card:hover { border-color: var(--accent); background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .upload-header { display: flex; align-items: center; gap: 10px; font-weight: 600; margin-bottom: 4px; }
+        .upload-desc { font-size: 11px; color: var(--text-secondary); margin-left: 26px; }
+        input[type="file"] { display: none; }
+
+        .stats-container {
+            display: flex; flex-direction: column; gap: 8px;
+            background: #fafafa; padding: 16px; border-radius: 8px; border: 1px solid var(--border);
+        }
+        .stat-row { display: flex; justify-content: space-between; font-size: 13px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-secondary); }
+        .status-dot.active { background: var(--success); }
+        .status-dot.error { background: var(--error); }
+
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; font-size: 13px; transition: background 0.2s; }
+        .btn-primary { background: var(--text-primary); color: white; }
+        .btn-danger { background: #fee2e2; color: #991b1b; margin-top: auto; }
+
+        .main { flex: 1; display: flex; flex-direction: column; height: 100vh; background: var(--bg-color); }
+        .chat-scroll { flex: 1; overflow-y: auto; padding: 40px; display: flex; flex-direction: column; gap: 24px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+        .msg { display: flex; gap: 16px; animation: fadein 0.3s ease; line-height: 1.6; }
+        .msg-avatar { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .user-avatar { background: var(--text-primary); color: white; }
+        .ai-avatar { background: white; border: 1px solid var(--border); }
+        .msg-content { flex: 1; font-size: 15px; color: var(--text-primary); }
+        .msg-content strong { font-weight: 600; color: #000; }
+
+        .sources-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .source-pill { background: #fff; border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--text-secondary); }
+
+        .input-wrapper { background: var(--sidebar-bg); border-top: 1px solid var(--border); padding: 24px; display: flex; justify-content: center; }
+        .input-group { max-width: 900px; width: 100%; position: relative; display: flex; gap: 10px; }
+        input[type="text"] { width: 100%; padding: 16px; padding-right: 100px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; background: #fcfcfc; }
+        .send-btn { position: absolute; right: 8px; top: 8px; bottom: 8px; background: var(--text-primary); color: white; border: none; border-radius: 6px; padding: 0 16px; font-weight: 600; cursor: pointer; }
+        
+        .typing-indicator span { display: inline-block; width: 5px; height: 5px; background-color: var(--text-secondary); border-radius: 50%; animation: typing 1s infinite; margin: 0 2px; }
+        @keyframes typing { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-4px); opacity: 1; } }
+        @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="brand"><span>🔬</span> MRAG</div>
+    <div>
+        <div class="section-title">Ingestion Pipeline</div>
+        <div class="upload-grid">
+            <div class="upload-card" onclick="triggerUpload('pdf')">
+                <div class="upload-header">📄 PDF Document</div>
+                <div class="upload-desc">Unstructured.io Parser</div>
+                <input type="file" id="pdfInput" accept=".pdf" onchange="uploadFile('pdf', this)">
+            </div>
+            <div class="upload-card" onclick="triggerUpload('image')">
+                <div class="upload-header">🖼️ Image Analysis</div>
+                <div class="upload-desc">BLIP Caption + CLIP</div>
+                <input type="file" id="imageInput" accept="image/*" onchange="uploadFile('image', this)">
+            </div>
+            <div class="upload-card" onclick="triggerUpload('code')">
+                <div class="upload-header">💻 Codebase</div>
+                <div class="upload-desc">BGE-M3 + BM25</div>
+                <input type="file" id="codeInput" accept=".py,.js,.java,.cpp,.txt,.md" onchange="uploadFile('code', this)">
+            </div>
+        </div>
+    </div>
+    <div>
+        <div class="section-title">Database Stats (Qdrant)</div>
+        <div class="stats-container">
+            <div class="stat-row"><span>Backend</span> <div class="status-dot" id="statusDot"></div></div>
+            <div class="stat-row"><span>PDF Chunks</span> <strong id="pdfCount">0</strong></div>
+            <div class="stat-row"><span>Images</span> <strong id="imageCount">0</strong></div>
+            <div class="stat-row"><span>Code Chunks</span> <strong id="codeCount">0</strong></div>
+        </div>
+        <button class="btn btn-primary" onclick="refreshStats()" style="margin-top:8px;">Refresh Data</button>
+    </div>
+    <button class="btn btn-danger" onclick="clearDB()">Reset Database</button>
+</div>
+
+<div class="main">
+    <div class="chat-scroll" id="chatBox">
+        <div class="msg">
+            <div class="msg-avatar ai-avatar">🤖</div>
+            <div class="msg-content">
+                <strong>System Initialized</strong><br>
+                Multimodal RAG Pipeline is ready. I can process:<br><br>
+                1. <strong>PDFs</strong> (using Unstructured.io)<br>
+                2. <strong>Images</strong> (Auto-captioned by BLIP)<br>
+                3. <strong>Code</strong> (Hybrid Search)<br><br>
+                Upload a file to begin or ask a question.
+            </div>
+        </div>
+    </div>
+    <div class="input-wrapper">
+        <div class="input-group">
+            <input type="text" id="userInput" placeholder="Ask about your research, code, or images..." onkeypress="if(event.key==='Enter') sendQuery()">
+            <button class="send-btn" onclick="sendQuery()">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost:5000';
+
+    function triggerUpload(type) { document.getElementById(type + 'Input').click(); }
+
+    async function uploadFile(type, input) {
+        if (!input.files[0]) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        addMsg('user', `Uploading ${file.name}...`);
+        try {
+            const res = await fetch(`${API}/ingest/${type}`, { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                let extra = data.caption ? `<br><em>Caption: "${data.caption}"</em>` : '';
+                addMsg('ai', `✓ Successfully ingested <strong>${file.name}</strong>.${extra}`);
+                refreshStats();
+            } else {
+                addMsg('ai', `❌ Error: ${data.error || 'Unknown error'}`);
+            }
+        } catch (e) {
+            addMsg('ai', `❌ Connection Error: ${e.message}`);
+        }
+        input.value = '';
+    }
+
+    async function sendQuery() {
+        const input = document.getElementById('userInput');
+        const txt = input.value.trim();
+        if (!txt) return;
+        addMsg('user', txt);
+        input.value = '';
+        const loadId = addMsg('ai', '<div class="typing-indicator"><span></span><span></span><span></span></div>');
+
+        try {
+            const res = await fetch(`${API}/query`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: txt })
+            });
+            const data = await res.json();
+            document.getElementById(loadId).remove();
+
+            if (data.error) {
+                addMsg('ai', `Error: ${data.error}`);
+            } else {
+                let sourcesHtml = '';
+                if (data.sources && data.sources.length > 0) {
+                    sourcesHtml = `<div class="sources-list">${data.sources.map(s => `<span class="source-pill">${s}</span>`).join('')}</div>`;
+                }
+                
+                // NEW: Validation Table
+                let evidenceHtml = '';
+                if (data.evidence && data.evidence.length > 0) {
+                    evidenceHtml = `
+                    <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                        <details>
+                            <summary style="cursor:pointer; color:#2563eb; font-size:12px; font-weight:600;">
+                                🔍 View Retrieval & Validation Data
+                            </summary>
+                            <table style="width:100%; margin-top:10px; border-collapse:collapse; font-size:11px;">
+                                <tr style="background:#f8f9fa; text-align:left;">
+                                    <th style="padding:5px;">Source</th>
+                                    <th style="padding:5px;">Score</th>
+                                    <th style="padding:5px;">Excerpt</th>
+                                </tr>
+                                ${data.evidence.map(e => `
+                                    <tr style="border-bottom:1px solid #eee;">
+                                        <td style="padding:5px; color:#666;">${e.source}</td>
+                                        <td style="padding:5px; font-weight:bold; color:${e.score > 7 ? '#10b981' : '#f59e0b'}">${e.score.toFixed(1)}</td>
+                                        <td style="padding:5px; color:#444;">${e.text}</td>
+                                    </tr>
+                                `).join('')}
+                            </table>
+                        </details>
+                    </div>`;
+                }
+
+                let cleanResponse = data.response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                addMsg('ai', `${cleanResponse} ${sourcesHtml} ${evidenceHtml}`);
+            }
+        } catch (e) {
+            document.getElementById(loadId).remove();
+            addMsg('ai', `❌ Error connecting to backend.`);
+        }
+    }
+
+    function addMsg(role, html) {
+        const box = document.getElementById('chatBox');
+        const id = 'msg-' + Date.now();
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.id = id;
+        div.innerHTML = `
+            <div class="msg-avatar ${role === 'user' ? 'user-avatar' : 'ai-avatar'}">${role === 'user' ? '👤' : '🤖'}</div>
+            <div class="msg-content">${html}</div>
+        `;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+        return id;
+    }
+
+    async function refreshStats() {
+        try {
+            const res = await fetch(`${API}/stats`);
+            const data = await res.json();
+            document.getElementById('pdfCount').innerText = data.pdf?.count || 0;
+            document.getElementById('imageCount').innerText = data.image?.count || 0;
+            document.getElementById('codeCount').innerText = data.code?.count || 0;
+            document.getElementById('statusDot').classList.add('active');
+            document.getElementById('statusDot').classList.remove('error');
+        } catch (e) {
+            document.getElementById('statusDot').classList.add('error');
+            document.getElementById('statusDot').classList.remove('active');
+        }
+    }
+
+    async function clearDB() {
+        if (!confirm("Are you sure? This will delete all ingested data.")) return;
+        await fetch(`${API}/clear`, { method: 'POST' });
+        location.reload();
+    }
+
+    refreshStats();
+    setInterval(refreshStats, 10000);
+</script>
+</body>
+</html>
