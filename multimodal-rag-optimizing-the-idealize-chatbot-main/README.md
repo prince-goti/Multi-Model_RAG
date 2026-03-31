@@ -1,9 +1,3 @@
-# Multimodal RAG - Using Late Fusion Architecture
-
-**Submitted by:**
-* Het Sanjaykumar Suthar (225240)
-* Prince Goti (225258)
-* Ishan Chovatiya (225682)
 
 ## Project Overview
 
